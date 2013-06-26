@@ -1,0 +1,3 @@
+description = "Space exploration program (featuring photorealistic 3D rendering)"
+version = "1"
+requires = "geom glop bricabrac"
