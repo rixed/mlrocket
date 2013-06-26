@@ -6,13 +6,25 @@ OCAMLFLAGS    = -w Ael -g -annot
 
 REQUIRES = geom glop bricabrac
 
-.PHONY: all clean
+.PHONY: all clean install
 
-PROGRAMS = mlrocket.opt
+PROGRAMS = mlrocket.byte
 SOURCES = mlrocket.ml pic.ml rocket.ml world.ml game.ml main.ml
 
-all: $(PROGRAMS)
+all: byte opt
+byte: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)
+
+NAME = mlrocket
+
+install: all
+	if test -f mlrocket.opt ; then extra=mlrocket.opt ; fi ; \
+	ocamlfind install $(NAME) META mlrocket.byte $$extra
+
+uninstall:
+	ocamlfind remove $(NAME)
+
+reinstall: uninstall install
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .opt .byte
