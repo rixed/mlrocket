@@ -80,11 +80,17 @@ let camera_of_world world =
 			let nb_stars = int_of_float (stars_density *. world_surface) in
 			mlog "\tAdding %d stars..." nb_stars ;
 			add_star [] nb_stars in
-		let ground =
-			Pic.Path world.World.ground, uni_gc [| K.one ; K.one ; K.one |] in
 		View.make_viewable "root" (fun () ->
-            Pic.draw ~prec:World.prec (bg :: ground :: stars))
-            View.identity in
+            let p00,p10,p11,p01 = View.clip_coordinates () in
+            let reclip f paths =
+                List.flatten (List.map f paths) in
+            let g = reclip (Path.clip p00 p10) [world.World.ground] in
+            let g = reclip (Path.clip p10 p11) g in
+            let g = reclip (Path.clip p11 p01) g in
+            let g = reclip (Path.clip p01 p00) g in
+            let gc = uni_gc [| K.one ; K.one ; K.one |] in
+            let grounds = List.map (fun p -> Pic.Path p, gc) g in
+            Pic.draw ~prec:World.prec (bg :: grounds @ stars)) View.identity in
 	List.iter
 		(fun rocket ->
 			Rocket.set_viewable rocket (View.make_viewable
