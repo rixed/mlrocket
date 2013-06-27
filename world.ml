@@ -110,11 +110,13 @@ let run dt world =
         (* move *)
         Sparkle.run world.gravity dt sparkle ;
         if not (Path.is_inside prec world.ground sparkle.Sparkle.pos) then (
+            (* reflect the sparkle *)
             for c = 0 to 1 do
                 sparkle.Sparkle.speed.(c) <-
                     let x = K.neg sparkle.Sparkle.speed.(c) in
-                    K.half (K.add x (K.of_float (Random.float 0.6 -. 0.3)))
-            done
+                    K.half (K.add x (K.of_float (Random.float 60. -. 30.)))
+            done ;
+            if sparkle.Sparkle.life > 5 then sparkle.Sparkle.life <- sparkle.Sparkle.life
         ) ;
         sparkle.Sparkle.life > 0)
         world.sparkles
