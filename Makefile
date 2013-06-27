@@ -49,7 +49,7 @@ clean:
 	rm -f *.cm[ioxa] *.cmxa *.a *.s *.o *.byte *.opt .depend
 
 # Dependencies
-.depend: *.ml *.mli
+.depend: *.ml
 	$(OCAMLDEP) -package "$(REQUIRES)" -I .. $^ > $@
 
 -include .depend
