@@ -70,10 +70,11 @@ let run dt world =
         (* move rocket *)
         Rocket.run world.gravity dt rocket ;
         (* check collision with ground *)
+        let m = View.get_transform ~src:(Rocket.viewable rocket) () in
         if Poly.exists (fun p ->
-            let m = View.get_transform ~src:(Rocket.viewable rocket) () in
             let p' = G.M.mul_vec m [| p.(0) ; p.(1) ; K.one ; K.one |] in
-            not (Algo.is_inside_path prec world.ground p')) (Rocket.poly rocket)
+            not (Path.is_inside prec world.ground p'))
+            (Rocket.poly rocket)
         then (
             mlog "boum!" ;
             mlog "Your max speed was %a" K.print (K.sqrt world.max_speed) ;
