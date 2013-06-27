@@ -3,6 +3,8 @@ open Mlrocket
 type t =
 	{ ground : Path.t ;
 	  rockets : Rocket.t list ;
+      mutable sparkles : Sparkle.t list ;
+      mutable ignition : (int * Rocket.t * G.V.t * K.t) option ;
 	  gravity : K.t	;
       radius : K.t ;
       mutable max_speed : K.t }
@@ -59,6 +61,8 @@ let make ~radius =
 	mlog "\tGravity = %a" K.print gravity ;
 	{ ground = make_ground ~radius ;
 	  rockets = [ Rocket.make (Point.mul (K.half radius) (Point.make_unit 0)) ] ;
+      sparkles = [] ;
+      ignition = None ;
 	  gravity ;
       radius ;
       max_speed = K.zero }
@@ -84,5 +88,34 @@ let run dt world =
             let speed = G.V.norm2 (Rocket.speed rocket) in
             if K.compare speed world.max_speed > 0 then world.max_speed <- speed
         ))
-        world.rockets
+        world.rockets ;
+    (* create new sparkles *)
+    let rec new_sparkles pos s_orient s_thrust prev = function
+        | 0 -> prev
+        | n ->
+            let prev = Sparkle.make pos s_orient 0.2 s_thrust :: prev in
+            new_sparkles pos s_orient s_thrust prev (n-1) in
+    world.ignition <- Bricabrac.optbind world.ignition (fun (n, rocket, s_orient, s_thrust) ->
+        let ignite_ratio = 5 in (* spat 1/5 of n at every run *)
+        let nn = n / ignite_ratio in
+        let nn = if nn = 0 then n else nn in
+        let n = n - nn in
+        let pos = Rocket.pos rocket in
+        let s_pos = G.V.add pos s_orient in
+        world.sparkles <- new_sparkles s_pos s_orient s_thrust world.sparkles nn ;
+        if nn < 1 then None
+        else Some (n, rocket, s_orient, s_thrust)) ;
+    (* animate sparkles while eliminating old ones *)
+    world.sparkles <- List.filter (fun sparkle ->
+        (* move *)
+        Sparkle.run world.gravity dt sparkle ;
+        if not (Path.is_inside prec world.ground sparkle.Sparkle.pos) then (
+            for c = 0 to 1 do
+                sparkle.Sparkle.speed.(c) <-
+                    let x = K.neg sparkle.Sparkle.speed.(c) in
+                    K.half (K.add x (K.of_float (Random.float 0.6 -. 0.3)))
+            done
+        ) ;
+        sparkle.Sparkle.life > 0)
+        world.sparkles
 

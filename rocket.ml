@@ -44,14 +44,14 @@ let set_thrust rocket thrust = rocket.thrust <- thrust
 let set_viewable rocket v = rocket.viewable <- Some v
 let viewable rocket = Bricabrac.unopt rocket.viewable
 
-let run gravity dt rocket =
-	let s = K.mul dt rocket.thrust in
-	let thrust = G.V.mul s rocket.orient in
+let run gravity dt t =
+	let s = K.mul dt t.thrust in
+	let thrust = G.V.mul s t.orient in
 	let gravity' = Point.K.mul gravity dt in
-	let g = G.V.mul gravity' (G.V.normalize rocket.pos) in
-    rocket.prev_pos <- rocket.pos ;
-	rocket.speed <- G.V.add rocket.speed (G.V.add thrust g) ;
-	rocket.pos   <- G.V.add rocket.pos rocket.speed ;
+	let g = G.V.mul gravity' (G.V.normalize t.pos) in
+    t.prev_pos <- t.pos ;
+	t.speed <- G.V.add t.speed (G.V.add thrust g) ;
+	t.pos   <- G.V.add t.pos t.speed ;
 	(* loose 9/10th of your thrust every second *)
     let r = 0.1 ** K.to_float dt in
-	rocket.thrust <- K.mul (K.of_float r) rocket.thrust
+	t.thrust <- K.mul (K.of_float r) t.thrust

@@ -9,8 +9,18 @@ let game_clic world camera = function
         let pos = Rocket.pos rocket in
         let pos' = Point.sub clickpos pos in
         let n = Point.norm pos' in
-        Rocket.set_orient rocket (Point.mul (K.inv n) pos') ;
-        Rocket.set_thrust rocket (K.mul n (K.of_float 0.03))
+        let orient = Point.mul (K.inv n) pos' in
+        Rocket.set_orient rocket orient ;
+        (* Are we allowed to use thrust? *)
+        (match world.World.ignition with
+        | Some _ -> () (* nope *)
+        | None ->
+            Rocket.set_thrust rocket (K.mul n (K.of_float 0.03)) ;
+            (* spawn new sparkles *)
+            let s_orient = Array.map K.neg orient in   (* oposite direction *)
+            let s_thrust = K.mul n (K.of_float 8.) in
+            let nb = int_of_float (K.to_float n *. 5.) in
+            world.World.ignition <- Some (nb, rocket, s_orient, s_thrust))
     | _ -> ()
 
 let game_painter camera () =
@@ -90,7 +100,8 @@ let camera_of_world world =
             let g = reclip (Path.clip p01 p00) g in
             let gc = uni_gc [| K.one ; K.one ; K.one |] in
             let grounds = List.map (fun p -> Pic.Path p, gc) g in
-            Pic.draw ~prec:World.prec (bg :: grounds @ stars)) View.identity in
+            let sparkles = List.map (fun s -> Pic.Dot s.Sparkle.pos, s.Sparkle.gc) world.World.sparkles in
+            Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars)) View.identity in
 	List.iter
 		(fun rocket ->
 			Rocket.set_viewable rocket (View.make_viewable

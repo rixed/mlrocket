@@ -7,7 +7,7 @@ type gc = {
 	outline_color : color option
 }
 
-type elmt = Poly of Poly.t | Path of Path.t | Dot of Poly.Point.t | Clear | Void
+type elmt = Poly of Poly.t | Path of Path.t | Dot of Point.t | Clear | Void
 type t = (elmt * gc) list
 
 let draw ?(prec=Point.K.one) pic =

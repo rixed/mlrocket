@@ -9,7 +9,7 @@ REQUIRES = geom glop bricabrac
 .PHONY: all clean install
 
 PROGRAMS = mlrocket.byte
-SOURCES = mlrocket.ml pic.ml rocket.ml world.ml game.ml main.ml
+SOURCES = mlrocket.ml pic.ml rocket.ml sparkle.ml world.ml game.ml main.ml
 
 all: byte opt
 byte: $(PROGRAMS)
