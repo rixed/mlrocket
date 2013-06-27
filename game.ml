@@ -1,27 +1,11 @@
 open Mlrocket
 
-let fps = 15.
-
-let matrix_mult m (x, y, z) =
-    let ( * ) = K.mul and ( + ) = K.add in
-	[| x * m.(0).(0) + y * m.(1).(0) + z * m.(2).(0) + m.(3).(0) ;
-	   x * m.(0).(1) + y * m.(1).(1) + z * m.(2).(1) + m.(3).(1) ;
-	   x * m.(0).(2) + y * m.(1).(2) + z * m.(2).(2) + m.(3).(2) |]
-
 let game_clic world camera = function
     | G.Clic (x, y, w, h) ->
-        (* we cannot easily use unproject here because we want the coordinate
-         * of the click on the base attached to the rocket but that does not
-         * rotate with it (same orientation than root). This viewable does not
-         * exist. *)
-        let x = float_of_int (x - w/2) /. float_of_int (w/2)
-        and y = float_of_int (y - h/2) /. float_of_int (h/2) in
-        let y = -. y in
-        if abs_float x > 0.1 || abs_float y > 0.1 then
+        let m = View.get_transform ~dst:camera () in
+        let m = G.M.mul_mat (G.get_projection ()) m in
+        let clickpos = G.unproject (0,0,w,h) m x (h-y) in
         let rocket = List.hd world.World.rockets in
-        (* get the matrix transforming coords from camera to root *)
-        let m = View.get_transform ~src:camera () in
-        let clickpos = matrix_mult m (K.of_float x, K.of_float y, K.zero) in
         let pos = Rocket.pos rocket in
         let pos' = Point.sub clickpos pos in
         let n = Point.norm pos' in
@@ -40,19 +24,15 @@ let pos_of_camera world =
 	let rocket = List.hd world.World.rockets in
     Rocket.pos rocket
 
-let ppos_of_camera world =
-    let rocket = List.hd world.World.rockets in
-    Rocket.prev_pos rocket
+let speed_of_camera world =
+	let rocket = List.hd world.World.rockets in
+    G.V.norm (Rocket.speed rocket)
 
 let zoom_of_camera =
-	let speed_to_zoom = K.of_float 5. in
+	let speed_to_zoom = K.of_float 50. in
 	let min_zoom = K.of_float 10. in
-	let dt = K.inv (K.of_float fps) in
-	fun world -> 
-		let npos = pos_of_camera world in
-	    let ppos = ppos_of_camera world in
-        let dist = Point.norm (Point.sub npos ppos) in
-        let speed = K.div dist dt in
+	fun world ->
+        let speed = speed_of_camera world in
 		let zoom = K.add (K.mul speed speed_to_zoom) min_zoom in
 		zoom
 
@@ -103,9 +83,6 @@ let camera_of_world world =
 		let ground =
 			Pic.Path world.World.ground, uni_gc [| K.one ; K.one ; K.one |] in
 		View.make_viewable "root" (fun () ->
-            (* Profit from the start of painting to update world *)
-            let dt = clock_dt () in
-            World.run (K.of_float dt) world ;
             Pic.draw ~prec:World.prec (bg :: ground :: stars))
             View.identity in
 	List.iter
@@ -142,5 +119,8 @@ let play world =
 	let camera = camera_of_world world in
 	View.display
 		~on_event:(game_clic world camera)
-		[ game_painter camera ]
+        [ (fun () ->
+            let dt = clock_dt () in
+            World.run (K.of_float dt) world) ;
+		  game_painter camera ]
 

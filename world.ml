@@ -63,7 +63,7 @@ let make ~radius =
       radius ;
       max_speed = K.zero }
 
-let prec = K.of_float 0.5
+let prec = K.of_float 1.
 
 let run dt world =
     List.iter (fun rocket ->
@@ -73,8 +73,8 @@ let run dt world =
         if Poly.exists (fun p ->
             let m = View.get_transform ~src:(Rocket.viewable rocket) () in
             let p' = G.M.mul_vec m [| p.(0) ; p.(1) ; K.one ; K.one |] in
-            not (Algo.is_inside_path prec world.ground p')) (Rocket.poly rocket
-        ) then (
+            not (Algo.is_inside_path prec world.ground p')) (Rocket.poly rocket)
+        then (
             mlog "boum!" ;
             mlog "Your max speed was %a" K.print (K.sqrt world.max_speed) ;
             exit 0
