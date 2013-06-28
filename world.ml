@@ -96,14 +96,14 @@ let run dt world =
             let prev = Sparkle.make pos s_orient 0.2 s_thrust :: prev in
             new_sparkles pos s_orient s_thrust prev (n-1) in
     world.ignition <- Bricabrac.optbind world.ignition (fun (n, rocket, s_orient, s_thrust) ->
-        let ignite_ratio = 5 in (* spat 1/5 of n at every run *)
-        let nn = n / ignite_ratio in
+        let ignite_ratio = 5 in (* spat 1/5 of n at every 50th of second *)
+        let nn = (K.to_int (K.mul (K.mul dt (K.of_int 50)) (K.of_int n))) / ignite_ratio in
         let nn = if nn = 0 then n else nn in
         let n = n - nn in
         let pos = Rocket.pos rocket in
         let s_pos = G.V.add pos s_orient in
         world.sparkles <- new_sparkles s_pos s_orient s_thrust world.sparkles nn ;
-        if nn < 1 then None
+        if n < 1 then None
         else Some (n, rocket, s_orient, s_thrust)) ;
     (* animate sparkles while eliminating old ones *)
     world.sparkles <- List.filter (fun sparkle ->
@@ -113,11 +113,10 @@ let run dt world =
             (* reflect the sparkle *)
             for c = 0 to 1 do
                 sparkle.Sparkle.speed.(c) <-
-                    let x = K.neg sparkle.Sparkle.speed.(c) in
-                    K.half (K.add x (K.of_float (Random.float 60. -. 30.)))
+                    let x = K.half (K.neg sparkle.Sparkle.speed.(c)) in
+                    K.add x (K.of_float (Random.float 60. -. 30.))
             done ;
-            if sparkle.Sparkle.life > 5 then sparkle.Sparkle.life <- sparkle.Sparkle.life
         ) ;
-        sparkle.Sparkle.life > 0)
+        K.compare sparkle.Sparkle.life K.zero > 0)
         world.sparkles
 

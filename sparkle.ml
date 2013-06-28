@@ -3,7 +3,7 @@ open Mlrocket
 type t =
     { mutable pos : Point.t ;
       speed : G.V.t ;
-      mutable life : int ;
+      mutable life : K.t ; (* in secs *)
       gc : Pic.gc }
 
 let make pos orient spray speed =
@@ -24,10 +24,10 @@ let make pos orient spray speed =
     let rand_gc () =
         let c = G.Uniq (rand_col ()) in
         { Pic.fill_color = Some c ; Pic.outline_color = Some c } in
-    { speed ; pos ; life = 3 + Random.int 10 ; gc = rand_gc () }
+    { speed ; pos ; life = K.of_float (0.1 +. Random.float 0.3) ; gc = rand_gc () }
 
 let run _gravity dt t =
     let s = G.V.mul dt t.speed in
     t.pos <- G.V.add t.pos s ;
-    t.life <- t.life-1
+    t.life <- K.sub t.life dt
 

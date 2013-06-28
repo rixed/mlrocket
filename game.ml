@@ -15,11 +15,12 @@ let game_clic world camera = function
         (match world.World.ignition with
         | Some _ -> () (* nope *)
         | None ->
+            let n = K.min n (K.of_int 20) in
             Rocket.set_thrust rocket (K.mul n (K.of_float 0.03)) ;
             (* spawn new sparkles *)
             let s_orient = Array.map K.neg orient in   (* oposite direction *)
-            let s_thrust = K.mul n (K.of_float 8.) in
-            let nb = int_of_float (K.to_float n *. 5.) in
+            let s_thrust = K.mul n (K.of_float 6.) in
+            let nb = int_of_float (K.to_float n *. 2.) in
             world.World.ignition <- Some (nb, rocket, s_orient, s_thrust))
     | _ -> ()
 
@@ -40,11 +41,11 @@ let speed_of_camera world =
 
 let zoom_of_camera =
 	let speed_to_zoom = K.of_float 50. in
-	let min_zoom = K.of_float 10. in
+	let min_zoom = K.of_float 10. and max_zoom = K.of_float 30. in
 	fun world ->
         let speed = speed_of_camera world in
 		let zoom = K.add (K.mul speed speed_to_zoom) min_zoom in
-		zoom
+		K.min max_zoom zoom
 
 let orient_of_camera world =
 	let rocket = List.hd world.World.rockets in
@@ -58,13 +59,13 @@ let orient_of_camera world =
 
 let clock_dt =
     let last = ref None in
-    fun () -> match !last with
-        | None -> 0.01
-        | Some t ->
-            let n = Unix.gettimeofday () in
-            let dt = n -. t in
-            last := Some n ;
-            dt
+    fun () ->
+        let n = Unix.gettimeofday () in
+        let dt = match !last with
+            | None -> 0.01
+            | Some t -> n -. t in
+        last := Some n ;
+        dt
 
 let camera_of_world world =
 	let root =
