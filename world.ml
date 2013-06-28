@@ -3,6 +3,7 @@ open Mlrocket
 type t =
 	{ ground : Path.t ;
 	  rockets : Rocket.t list ;
+      flowers : Flower.t list ;
       mutable sparkles : Sparkle.t list ;
       mutable ignition : (int * Rocket.t * G.V.t * K.t) option ;
 	  gravity : K.t	;
@@ -54,20 +55,26 @@ let make_ground ~radius =
 	let ground = randomize_path (K.of_float 3.) grnd_1 in
 	ground
 	
+let prec = K.of_float 1.
+
 let make ~radius =
     let radius = K.of_int radius in
 	mlog "Building world of radius %a..." K.print radius ;
 	let gravity = K.of_float 0.1 in
 	mlog "\tGravity = %a" K.print gravity ;
-	{ ground = make_ground ~radius ;
+    let ground = make_ground ~radius in
+    let flowers = ref [] in
+    Path.iter (K.of_float 50.) ground (fun p ->
+        let dir = G.V.mul (K.neg (K.mul (K.of_float 5.) (K.inv radius))) p in
+        flowers := Flower.make p dir :: !flowers) ;
+	{ ground ;
 	  rockets = [ Rocket.make (Point.mul (K.half radius) (Point.make_unit 0)) ] ;
+      flowers = !flowers ;
       sparkles = [] ;
       ignition = None ;
 	  gravity ;
       radius ;
       max_speed = K.zero }
-
-let prec = K.of_float 1.
 
 let run dt world =
     List.iter (fun rocket ->

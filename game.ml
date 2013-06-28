@@ -27,10 +27,6 @@ let game_clic world camera = function
 let game_painter camera () =
 	View.draw_viewable camera
 
-let uni_gc color =
-	let faded c = G.C.mul (K.of_float 0.8) c in
-	{ Pic.fill_color = Some (G.Uniq (faded color)) ; Pic.outline_color = Some (G.Uniq color) }
-
 let pos_of_camera world =
 	let rocket = List.hd world.World.rockets in
     Rocket.pos rocket
@@ -69,7 +65,7 @@ let clock_dt =
 
 let camera_of_world world =
 	let root =
-		let bg = Pic.Clear, uni_gc [| K.of_float 0.08 ; K.of_float 0.08 ; K.of_float 0.18 |] in
+		let bg = Pic.Clear, Pic.uni_gc [| K.of_float 0.08 ; K.of_float 0.08 ; K.of_float 0.18 |] in
 		let stars = 
 			let rec add_star l n =
                 if n = 0 then l else
@@ -81,34 +77,39 @@ let camera_of_world world =
 						if K.compare (Point.norm2 p) rad2 < 0 then p
 						else aux () in
 					aux () in
-				let rand_col () = K.of_float ((Random.float 0.5) +. 0.5) in
-				let col = [| rand_col () ; rand_col () ; rand_col () |] in
-				let star = Pic.Dot point, uni_gc col in
+				let col = Pic.rand_col () in
+				let star = Pic.Dot point, Pic.uni_gc col in
 				add_star (star::l) (n-1) in
 			let stars_density = 0.01 in
-			let pi = K.of_float (4. *. atan 1.) in
 			let world_surface = K.to_float (K.mul pi (K.square world.World.radius)) in
 			let nb_stars = int_of_float (stars_density *. world_surface) in
 			mlog "\tAdding %d stars..." nb_stars ;
 			add_star [] nb_stars in
 		View.make_viewable "root" (fun () ->
             let p00,p10,p11,p01 = View.clip_coordinates () in
+            let bbox = Bbox.(add (add (add (make p00) p10) p11) p01) in
             let reclip f paths =
                 List.flatten (List.map f paths) in
             let g = reclip (Path.clip p00 p10) [world.World.ground] in
             let g = reclip (Path.clip p10 p11) g in
             let g = reclip (Path.clip p11 p01) g in
             let g = reclip (Path.clip p01 p00) g in
-            let gc = uni_gc [| K.one ; K.one ; K.one |] in
+            let gc = Pic.uni_gc [| K.one ; K.one ; K.one |] in
             let grounds = List.map (fun p -> Pic.Path p, gc) g in
             let sparkles = List.map (fun s -> Pic.Dot s.Sparkle.pos, s.Sparkle.gc) world.World.sparkles in
-            Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars)) View.identity in
+            let flowers = List.flatten (List.map (fun f ->
+                if Bbox.intersect bbox f.Flower.bbox then
+                    List.map (fun p -> Pic.Path p, f.Flower.gc) f.Flower.paths
+                else [])
+                world.World.flowers) in
+            Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars) ;
+            Pic.draw ~prec:(K.of_float 0.5) flowers) View.identity in
 	List.iter
 		(fun rocket ->
 			Rocket.set_viewable rocket (View.make_viewable
 				~parent:root "a rocket"
 				(fun () ->
-                    Pic.draw [ Pic.Poly (Rocket.poly rocket), uni_gc [| K.one ; K.one ; K.one |] ])
+                    Pic.draw [ Pic.Poly (Rocket.poly rocket), Pic.uni_gc [| K.one ; K.one ; K.one |] ])
 				(View.trans_orientor
                     (fun () ->
                         let pos = Rocket.pos rocket in

@@ -2,10 +2,18 @@ open Mlrocket
 
 type color = G.color_specs
 
+let rand_col () =
+    let rand_c () = K.of_float ((Random.float 0.5) +. 0.5) in
+    [| rand_c () ; rand_c () ; rand_c () |]
+
 type gc = {
 	fill_color : color option ;
 	outline_color : color option
 }
+
+let uni_gc color =
+	let faded c = G.C.mul (K.of_float 0.8) c in
+	{ fill_color = Some (G.Uniq (faded color)) ; outline_color = Some (G.Uniq color) }
 
 type elmt = Poly of Poly.t | Path of Path.t | Dot of Point.t | Clear | Void
 type t = (elmt * gc) list
