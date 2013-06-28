@@ -99,7 +99,7 @@ let camera_of_world world =
             let sparkles = List.map (fun s -> Pic.Dot s.Sparkle.pos, s.Sparkle.gc) world.World.sparkles in
             let flowers = List.flatten (List.map (fun f ->
                 if Bbox.intersect bbox f.Flower.bbox then
-                    List.map (fun p -> Pic.Path p, f.Flower.gc) f.Flower.paths
+                    f.Flower.elmts
                 else [])
                 world.World.flowers) in
             Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars) ;

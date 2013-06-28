@@ -2,9 +2,8 @@ open Mlrocket
 
 type t =
     { pos : G.V.t ;
-      paths : Path.t list ;
-      bbox : Bbox.t ;
-      gc : Pic.gc }
+      elmts : Pic.t ;
+      bbox : Bbox.t }
 
 let make start dir =
     let rand_next p d s =
@@ -17,18 +16,20 @@ let make start dir =
         | n ->
             let next = rand_next start dir spray in
             rand_line next (G.V.mul (K.of_float 0.8) dir) ~spray:(spray *. 1.4) ~prev:(next::prev) (n-1) in
-    let stem, stem_end = match rand_line start dir (Random.int 4 + 2) with
+    let stem, stem_end, bbox = match rand_line start dir (Random.int 4 + 2) with
         | last :: ctrls ->
-            Path.(extend (empty start) last (List.rev ctrls) make_bezier_curve), last
+            let path = Path.(extend (empty start) last (List.rev ctrls) make_bezier_curve) in
+            (Pic.Path path, Pic.uni_gc (Pic.rand_col ())), last, Path.bbox path
         | _ -> assert false in
     (* now the flower itself *)
-    let head = match Random.int 4 with
-        | 1|2 ->
+    let head, bbox = match Random.int 4 with
+        | 0|1|2 ->
             let pi = K.to_float pi in
-            let nb_petals = 3 + Random.int 4 in
+            let nb_petals = 4 + Random.int 5 in
             let delta_angle = 2. *. pi /. float_of_int nb_petals in
             let start_angle = Random.float pi in
-            let radius = K.of_float (Random.float 1. +. 2.) in
+            let radius = K.of_float (Random.float 1. +. 2.5) in
+            let petal_width = Random.float 0.6 +. 0.3 in
             let make_ctrl a =
                 let c = K.of_float (cos a)
                 and s = K.of_float (sin a) in
@@ -38,11 +39,13 @@ let make start dir =
                 | 0 -> path
                 | n ->
                     let path = Path.(extend path stem_end
-                                [ make_ctrl (ang -. 0.4 *. delta_angle) ;
-                                  make_ctrl (ang +. 0.4 *. delta_angle) ]
+                                [ make_ctrl (ang -. petal_width *. delta_angle) ;
+                                  make_ctrl (ang +. petal_width *. delta_angle) ]
                                 make_bezier_curve) in
                     add_petal path (ang +. delta_angle) (n-1) in
-            [ add_petal (Path.empty stem_end) start_angle nb_petals ]
+            let path = add_petal (Path.empty stem_end) start_angle nb_petals in
+            let poly = Algo.poly_of_path path (K.of_float 0.05) in
+            [ Pic.Poly poly, Pic.uni_gc (Pic.rand_col ()) ], Bbox.union bbox (Algo.bbox_single_poly poly)
         | _ ->
             let h = ref [] in
             let radius = Random.float 1. +. 1. in
@@ -55,8 +58,8 @@ let make start dir =
                 and p1 = [| K.sub stem_end.(0) c ; K.sub stem_end.(1) s |] in
                 h := Path.(extend (empty p0) p1 [] make_straight_line) :: !h
             done ;
-            !h in
-    let paths = stem :: head in
-    let bbox = List.fold_left (fun bbox p -> Bbox.union (Path.bbox p) bbox) Bbox.empty paths in
-    { pos = start ; paths ; bbox ; gc = Pic.uni_gc (Pic.rand_col ()) }
+            List.map (fun p -> Pic.Path p, Pic.uni_gc (Pic.rand_col ())) !h,
+            List.fold_left (fun bbox p -> Bbox.union bbox (Path.bbox p)) bbox !h in
+    let elmts = stem :: head in
+    { pos = start ; elmts ; bbox }
 
