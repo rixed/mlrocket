@@ -53,16 +53,6 @@ let orient_of_camera world =
     else
         [| K.one ; K.zero |]
 
-let clock_dt =
-    let last = ref None in
-    fun () ->
-        let n = Unix.gettimeofday () in
-        let dt = match !last with
-            | None -> 0.01
-            | Some t -> n -. t in
-        last := Some n ;
-        dt
-
 let camera_of_world world =
 	let root =
 		let bg = Pic.Clear, Pic.uni_gc [| K.of_float 0.08 ; K.of_float 0.08 ; K.of_float 0.18 |] in
@@ -81,7 +71,7 @@ let camera_of_world world =
 				let star = Pic.Dot point, Pic.uni_gc col in
 				add_star (star::l) (n-1) in
 			let stars_density = 0.01 in
-			let world_surface = K.to_float (K.mul pi (K.square world.World.radius)) in
+			let world_surface = pi *. (K.to_float (K.square world.World.radius)) in
 			let nb_stars = int_of_float (stars_density *. world_surface) in
 			mlog "\tAdding %d stars..." nb_stars ;
 			add_star [] nb_stars in
@@ -97,13 +87,9 @@ let camera_of_world world =
             let gc = Pic.uni_gc [| K.one ; K.one ; K.one |] in
             let grounds = List.map (fun p -> Pic.Path p, gc) g in
             let sparkles = List.map (fun s -> Pic.Dot s.Sparkle.pos, s.Sparkle.gc) world.World.sparkles in
-            let flowers = List.flatten (List.map (fun f ->
-                if Bbox.intersect bbox f.Flower.bbox then
-                    f.Flower.elmts
-                else [])
-                world.World.flowers) in
             Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars) ;
-            Pic.draw ~prec:(K.of_float 0.5) flowers) View.identity in
+            let flowers = List.filter (fun f -> Bbox.intersect bbox f.Flower.bbox) world.World.flowers in
+            List.iter (Flower.draw (K.of_float 0.5)) flowers) View.identity in
 	List.iter
 		(fun rocket ->
 			Rocket.set_viewable rocket (View.make_viewable
@@ -134,12 +120,12 @@ let camera_of_world world =
 		(View.scaler
 			(fun () -> let zoom = zoom_of_camera world in zoom, zoom, K.one))
 
-let play world =
+let play world clock =
 	let camera = camera_of_world world in
 	View.display
 		~on_event:(game_clic world camera)
         [ (fun () ->
-            let dt = clock_dt () in
-            World.run (K.of_float dt) world) ;
+            let now, dt = clock () in
+            World.run now (K.of_float dt) world) ;
 		  game_painter camera ]
 

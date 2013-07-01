@@ -8,6 +8,7 @@ type t =
       mutable ignition : (int * Rocket.t * G.V.t * K.t) option ;
 	  gravity : K.t	;
       radius : K.t ;
+      mutable weather : Weather.t ;
       mutable max_speed : K.t }
 
 let randomize_path res path =
@@ -57,7 +58,7 @@ let make_ground ~radius =
 	
 let prec = K.of_float 1.
 
-let make ~radius =
+let make ~radius now =
     let radius = K.of_int radius in
 	mlog "Building world of radius %a..." K.print radius ;
 	let gravity = K.of_float 0.1 in
@@ -74,9 +75,10 @@ let make ~radius =
       ignition = None ;
 	  gravity ;
       radius ;
+      weather = Weather.make now ;
       max_speed = K.zero }
 
-let run dt world =
+let run now dt world =
     List.iter (fun rocket ->
         (* move rocket *)
         Rocket.run world.gravity dt rocket ;
@@ -125,5 +127,7 @@ let run dt world =
             done ;
         ) ;
         K.compare sparkle.Sparkle.life K.zero > 0)
-        world.sparkles
+        world.sparkles ;
+    (* animate flowers according to weather (later: sparkles) *)
+    List.iter (Flower.run now dt (K.to_float world.radius) world.weather) world.flowers
 

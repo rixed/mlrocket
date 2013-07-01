@@ -10,7 +10,23 @@ module Poly = Geom_shapes.Polygon (Point)
 module Path = Geom_path.Make (Point)
 module Algo = Geom_algo.Algorithms (Poly) (Path)
 
-let pi = K.of_float (4. *. atan 1.)
+let pi = 4. *. atan 1.
+let k_pi = K.of_float pi
+
+let ang_norm x y =
+    let l = sqrt (x*.x +. y*.y) in
+    let a =
+        if abs_float y > abs_float x then
+            let a = acos (x/.l) in
+            if y >= 0. then a else 2. *. pi -. a
+        else if l > 0. then
+            let a = asin (y/.l) in
+            if x >= 0. then (
+                if y >= 0. then a else 2. *. pi +. a
+            ) else pi -. a
+        else 0. in
+    assert (a >= 0. && a <= 2. *. pi) ;
+    a, l
 
 open Format
 
