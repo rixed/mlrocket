@@ -88,8 +88,8 @@ let camera_of_world world =
             let grounds = List.map (fun p -> Pic.Path p, gc) g in
             let sparkles = List.map (fun s -> Pic.Dot s.Sparkle.pos, s.Sparkle.gc) world.World.sparkles in
             Pic.draw ~prec:World.prec (bg :: grounds @ sparkles @ stars) ;
-            let flowers = List.filter (fun f -> Bbox.intersect bbox f.Flower.bbox) world.World.flowers in
-            List.iter (Flower.draw (K.of_float 0.5)) flowers) View.identity in
+            let flowers = List.filter (fun f -> Bbox.intersect bbox (Flower.bbox f)) world.World.flowers in
+            List.iter (Flower.draw (K.of_float 0.4)) flowers) View.identity in
 	List.iter
 		(fun rocket ->
 			Rocket.set_viewable rocket (View.make_viewable

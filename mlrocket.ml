@@ -2,7 +2,7 @@
  * a "realistic" setting. Don't expect too much. *)
 
 module G = Glop_impl.Glop2D
-module View = Glop_view.Make(G)
+module View = Glop_view.Make (G)
 module Point = Geom_shapes.Point (G.V)
 module Bbox = Point.Bbox
 module K = Point.K

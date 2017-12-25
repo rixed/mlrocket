@@ -29,7 +29,7 @@ let randomize_path res path =
 		| Some path'' ->
             let right_turn v = [| v.(1) ; K.neg v.(0) |] in
 			let rand_pt = right_turn (G.V.add rand_dec (G.V.sub p !last_p)) in
-			path' := Some (Path.extend path'' p [Point.sub !last_p !last_ctrl ; Point.add p rand_pt] Path.make_bezier_curve) ;
+			path' := Some (Path.extend p [Point.sub !last_p !last_ctrl ; Point.add p rand_pt] Path.make_bezier_curve path'') ;
 			last_ctrl := rand_pt ;
 			last_p := p in
 	Path.iter res path add_segment ;
@@ -47,11 +47,11 @@ let make_ground ~radius =
 	let bottom_right = Point.add right down in
 	let upper_left   = Point.add left  up in
 	let bottom_left  = Point.add left  down in
-	let circ_0 = Path.extend (Path.empty left) up    [ upper_left ]   Path.make_bezier_curve in
-	let circ_1 = Path.extend circ_0            right [ upper_right ]  Path.make_bezier_curve in
-	let circ_2 = Path.extend circ_1            down  [ bottom_right ] Path.make_bezier_curve in
-	let circle = Path.extend circ_2            left  [ bottom_left ]  Path.make_bezier_curve in
-	let grnd_0 = Path.scale circle Point.zero radius in
+	let circ_0 = Path.extend up    [ upper_left ]   Path.make_bezier_curve (Path.empty left) in
+	let circ_1 = Path.extend right [ upper_right ]  Path.make_bezier_curve circ_0 in
+	let circ_2 = Path.extend down  [ bottom_right ] Path.make_bezier_curve circ_1 in
+	let circle = Path.extend left  [ bottom_left ]  Path.make_bezier_curve circ_2 in
+	let grnd_0 = Path.scale radius circle in
 	let grnd_1 = randomize_path (K.of_float 9.) grnd_0 in
 	let ground = randomize_path (K.of_float 3.) grnd_1 in
 	ground

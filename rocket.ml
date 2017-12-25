@@ -11,13 +11,13 @@ type t =
       mutable viewable : View.viewable option }
 
 let make_shape () =
-	let (++) p1 p2 = Path.extend p1 p2 [] Path.make_straight_line in
+	let (++) p1 p2 = Path.extend p2 [] Path.make_straight_line p1 in
 	let width = Point.K.half Point.K.one in
 	let triangle_path = 
 		(Path.empty (Point.make_unit 0)) ++
 		[| Point.K.neg Point.K.one ; width |] ++
 		[| Point.K.neg Point.K.one ; Point.K.neg width |] in
-	Algo.poly_of_path triangle_path Point.K.one
+	Algo.poly_of_path Point.K.one triangle_path
 
 let make =
     let nb_rockets = ref 0 in

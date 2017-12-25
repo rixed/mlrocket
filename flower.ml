@@ -6,9 +6,9 @@ type t =
       head_rest_pos : Point.t ;
       mutable stem : Path.t ;
       head : Poly.t ;
+      head_bbox : Bbox.t ;
       mutable head_pos : Point.t ;
-      gc : Pic.gc ;
-      bbox : Bbox.t }
+      gc : Pic.gc }
 
 let iter_star f ~nb_peaks ~radius ~width =
     let delta_angle = 2. *. pi /. float_of_int nb_peaks in
@@ -39,9 +39,9 @@ let star ~nb_peaks ~radius ~width =
 let soft ~nb_peaks ~radius ~width =
     let path = ref (Path.empty Point.zero) in
     iter_star (fun p0 p1 ->
-        path := Path.extend !path Point.zero [ p0 ; p1 ] Path.make_bezier_curve)
+        path := Path.extend Point.zero [ p0 ; p1 ] Path.make_bezier_curve !path)
         ~nb_peaks ~radius ~width ;
-    Algo.poly_of_path !path (K.of_float 0.05)
+    Algo.poly_of_path (K.of_float 0.05) !path
 
 let make start dir =
     let rand_next p d s =
@@ -54,10 +54,10 @@ let make start dir =
         | n ->
             let next = rand_next start dir spray in
             rand_line next (G.V.mul (K.of_float 0.8) dir) ~spray:(spray *. 1.4) ~prev:(next::prev) (n-1) in
-    let stem, stem_end, bbox = match rand_line start dir (Random.int 4 + 2) with
+    let stem, stem_end = match rand_line start dir (Random.int 4 + 2) with
         | last :: ctrls ->
-            let path = Path.(extend (empty start) last (List.rev ctrls) make_bezier_curve) in
-            path, last, Path.bbox path
+            let path = Path.extend last (List.rev ctrls) Path.make_bezier_curve (Path.empty start) in
+            path, last
         | _ -> assert false in
     (* now the flower itself *)
     let head = match Random.int 4 with
@@ -71,7 +71,7 @@ let make start dir =
             let nb_peaks = int_of_float (radius *. 8.) + Random.int 5 in
             let width = 0.1 in
             star ~nb_peaks ~radius ~width in
-    let bbox = Bbox.union bbox (Algo.bbox_single_poly head) in
+    let head_bbox = Algo.bbox_single_poly head in
     let gc = Pic.uni_gc (Pic.rand_col ()) in
     { start_pos = start ;
       stem_rest = stem ;
@@ -79,11 +79,11 @@ let make start dir =
       stem ; (* will be recomputed by run *)
       head ;
       head_pos = stem_end ; (* will be recomputed by run *)
-      bbox ; gc }
+      head_bbox ; gc }
 
 let draw prec t =
     let open Pic in
-    let head = Poly.translate t.head t.head_pos in
+    let head = Poly.translate t.head_pos t.head in
     draw ~prec [ Path t.stem, t.gc ; Poly head, t.gc ]
 
 let run now _dt radius weather t =
@@ -94,3 +94,7 @@ let run now _dt radius weather t =
         let ctrls' = List.map (fun ctrl -> G.V.add wind_speed ctrl) ctrls in
         t.head_pos <- stop' ;
         stop', ctrls') t.stem_rest
+
+let bbox t =
+    let bbox = Bbox.translate t.head_bbox t.head_pos in
+    Bbox.union bbox (Path.bbox t.stem)
