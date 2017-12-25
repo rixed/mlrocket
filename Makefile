@@ -8,18 +8,17 @@ REQUIRES = geom glop bricabrac
 
 .PHONY: all clean install
 
-PROGRAMS = mlrocket.byte
+PROGRAMS = mlrocket.opt
 SOURCES = mlrocket.ml pic.ml weather.ml flower.ml rocket.ml sparkle.ml world.ml game.ml main.ml
 
-all: byte opt
-byte: $(PROGRAMS)
-opt: $(PROGRAMS:.byte=.opt)
+all: opt
+opt: $(PROGRAMS)
+byte: $(PROGRAMS:.opt=.byte)
 
 NAME = mlrocket
 
 install: all
-	if test -f mlrocket.opt ; then extra=mlrocket.opt ; fi ; \
-	ocamlfind install $(NAME) META mlrocket.byte $$extra
+	ocamlfind install $(NAME) META mlrocket.opt
 
 uninstall:
 	ocamlfind remove $(NAME)
